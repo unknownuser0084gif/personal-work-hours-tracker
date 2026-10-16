@@ -133,6 +133,8 @@ export default function Reports() {
                 {[
                   "تاریخ",
                   "روز",
+                  "ورود",
+                  "خروج",
                   "کارکرد",
                   "موظف",
                   "اضافه",
@@ -150,6 +152,22 @@ export default function Reports() {
                 <tr key={d.date}>
                   <td dir="ltr">{toPersianDigits(toJalali(d.date))}</td>
                   <td>{weekday(d.date)}</td>
+                  <td dir="ltr">
+                    {d.entries.length
+                      ? d.entries.map((e) => (
+                          <div key={e.id}>{toPersianDigits(e.in)}</div>
+                        ))
+                      : "—"}
+                  </td>
+                  <td dir="ltr">
+                    {d.entries.length
+                      ? d.entries.map((e) => (
+                          <div key={e.id}>
+                            {e.out ? toPersianDigits(e.out) : "ثبت نشده"}
+                          </div>
+                        ))
+                      : "—"}
+                  </td>
                   <td>{duration(d.totalMinutes)}</td>
                   <td>{duration(d.requiredMinutes)}</td>
                   <td>{duration(d.overtimeMinutes)}</td>

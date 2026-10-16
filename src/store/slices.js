@@ -11,6 +11,7 @@ import {
   deleteHoliday,
   saveNote,
   clearAll,
+  importBackup,
 } from "./thunks.js";
 const settings = createSlice({
   name: "settings",
@@ -19,6 +20,7 @@ const settings = createSlice({
   extraReducers: (b) =>
     b
       .addCase(hydrate.fulfilled, (_, a) => a.payload.settings)
+      .addCase(importBackup.fulfilled, (_, a) => a.payload.settings)
       .addCase(saveSettings.fulfilled, (_, a) => a.payload)
       .addCase(clearAll.fulfilled, (_, a) => a.payload.settings),
 });
@@ -28,6 +30,7 @@ const entries = createSlice({
   reducers: {},
   extraReducers: (b) => {
     b.addCase(hydrate.fulfilled, (_, a) => a.payload.entries)
+      .addCase(importBackup.fulfilled, (_, a) => a.payload.entries)
       .addCase(clearAll.fulfilled, () => [])
       .addCase(deleteEntry.fulfilled, (s, a) =>
         s.filter((e) => e.id !== a.payload?.id),
@@ -47,6 +50,7 @@ const holidays = createSlice({
   extraReducers: (b) =>
     b
       .addCase(hydrate.fulfilled, (_, a) => a.payload.holidays)
+      .addCase(importBackup.fulfilled, (_, a) => a.payload.holidays)
       .addCase(clearAll.fulfilled, () => [])
       .addCase(saveHoliday.fulfilled, (s, a) => {
         const { value, originalDate } = a.payload;
@@ -69,6 +73,7 @@ const dayNotes = createSlice({
   extraReducers: (b) =>
     b
       .addCase(hydrate.fulfilled, (_, a) => a.payload.dayNotes)
+      .addCase(importBackup.fulfilled, (_, a) => a.payload.dayNotes)
       .addCase(clearAll.fulfilled, () => [])
       .addCase(saveNote.fulfilled, (s, a) => {
         const i = s.findIndex((n) => n.date === a.payload.date);
@@ -110,6 +115,12 @@ const ui = createSlice({
         s.manual = null;
         s.confirm = null;
         s.missed = [];
+      })
+      .addCase(importBackup.fulfilled, (s) => {
+        s.manual = null;
+        s.confirm = null;
+        s.missed = [];
+        s.clearRequested = false;
       }),
 });
 export const { patchUI } = ui.actions;

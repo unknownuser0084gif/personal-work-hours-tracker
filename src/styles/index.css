@@ -333,6 +333,18 @@ legend {
   margin-top: 13px;
   color: #526779;
 }
+.backup-tools {
+  margin-top: 10px;
+}
+.backup-hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.backup-filename {
+  overflow-wrap: anywhere;
+}
 .lunch-card {
   display: flex;
   align-items: center;

@@ -19,6 +19,7 @@ import { duration, toPersianDigits, number, money } from "../lib/format.js";
 import { Card, Metric, Progress, StatList } from "../components/Common.jsx";
 import { EntryList } from "../components/EntryList.jsx";
 import { WorkChart } from "../components/WorkChart.jsx";
+import { BackupActions } from "../components/BackupActions.jsx";
 export default function Dashboard() {
   const now = useNow(),
     today = localISO(now),
@@ -115,6 +116,7 @@ export default function Dashboard() {
             ثبت با ساعت دلخواه
           </button>
         </div>
+        <BackupActions />
         <p className="worktime">
           {worktime ? "الان در تایم کاری هستی" : "الان در تایم کاری نیستی"} ·{" "}
           {day.isWorking

@@ -6,6 +6,17 @@ import {
   validateSettings,
 } from "../lib/validation.js";
 import { parseISO } from "../lib/time.js";
+import { replaceFromBackup } from "../lib/backup.js";
+export const importBackup = createAsyncThunk(
+  "data/importBackup",
+  async (payload, { rejectWithValue }) => {
+    try {
+      return await replaceFromBackup(payload);
+    } catch (e) {
+      return rejectWithValue(e.message);
+    }
+  },
+);
 export const hydrate = createAsyncThunk("data/hydrate", () => readAll());
 export const saveEntry = createAsyncThunk(
   "entries/save",

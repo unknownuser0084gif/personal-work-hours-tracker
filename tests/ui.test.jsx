@@ -30,6 +30,12 @@ vi.mock("../src/components/WorkChart.jsx", () => ({
   ),
 }));
 import App from "../src/App.jsx";
+import { createBackup } from "../src/lib/backup.js";
+import { downloadJSON } from "../src/lib/export.js";
+vi.mock("../src/lib/export.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  downloadJSON: vi.fn(),
+}));
 let root, container, store;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 window.matchMedia = () => ({
@@ -78,8 +84,65 @@ async function mount(done = true) {
   await flush();
 }
 beforeEach(async () => {
+  vi.clearAllMocks();
   window.location.hash = "#/";
   for (const t of db.tables) await t.clear();
+});
+
+async function chooseBackup(text) {
+  const picker = container.querySelector('input[type="file"]');
+  Object.defineProperty(picker, "files", {
+    configurable: true,
+    value: [{ name: "backup.json", text: async () => text }],
+  });
+  await flush(() => picker.dispatchEvent(new Event("change", { bubbles: true })));
+  return picker;
+}
+
+it("dashboard downloads a complete JSON backup below time entry buttons", async () => {
+  await mount();
+  const quick = button("ثبت با ساعت دلخواه").parentElement;
+  expect(quick.nextElementSibling.className).toBe("backup-tools");
+  await flush(() => button("دانلود پشتیبان کامل").click());
+  for (let i = 0; i < 20 && !downloadJSON.mock.calls.length; i++) await flush();
+  expect(downloadJSON).toHaveBeenCalledTimes(1);
+  const [payload, filename] = downloadJSON.mock.calls[0];
+  expect(payload.data.settings).toEqual(store.getState().settings);
+  expect(payload.data).toHaveProperty("notifyLog");
+  expect(payload.reports.monthly[0]).toHaveProperty("salary");
+  expect(filename).toMatch(/^work-hours-backup-.*\.json$/);
+});
+
+it("import previews, cancellation preserves data, and confirmation replaces it immediately", async () => {
+  await mount();
+  const backup = await createBackup();
+  backup.data.settings.monthlySalary = 45000000;
+  backup.data.entries = [{ id: 42, date: "2026-10-08", in: "08:00", out: "16:00" }];
+  await flush(() => button("ثبت ورود الان").click());
+  const original = store.getState().entries;
+  const picker = await chooseBackup(JSON.stringify(backup));
+  expect(container.querySelector('[role="dialog"]').textContent).toContain("جایگزینی همهٔ اطلاعات؟");
+  expect(store.getState().entries).toEqual(original);
+  await flush(() => button("انصراف").click());
+  expect(store.getState().entries).toEqual(original);
+  expect(picker.value).toBe("");
+  await chooseBackup(JSON.stringify(backup));
+  await flush(() => button("تأیید و جایگزینی").click());
+  for (let i = 0; i < 20 && container.querySelector('[role="dialog"]'); i++) await flush();
+  expect(store.getState().entries).toEqual(backup.data.entries);
+  expect(store.getState().settings.monthlySalary).toBe(45000000);
+  expect(await db.entries.toArray()).toEqual(backup.data.entries);
+  expect(container.querySelector('[role="dialog"]')).toBeNull();
+  expect(button("ثبت ورود الان")).toBeTruthy();
+});
+
+it("invalid import displays an error without opening confirmation or changing data", async () => {
+  await mount();
+  const before = store.getState();
+  await chooseBackup("{invalid json");
+  expect(container.querySelector('[role="alert"]').textContent).toContain("فایل JSON معتبر نیست");
+  expect(container.querySelector('[role="dialog"]')).toBeNull();
+  expect(store.getState()).toEqual(before);
 });
 afterEach(async () => {
   if (root) await act(() => root.unmount());
@@ -166,6 +229,7 @@ it("ویرایش و حذف یک بازه از داشبورد با تأیید", a
   await flush(() => container.querySelector('[aria-label="حذف بازه"]').click());
   expect(container.textContent).toContain("حذف این بازه؟");
   await flush(() => button("تأیید").click());
+  for (let i = 0; i < 20 && store.getState().entries.length; i++) await flush();
   expect(store.getState().entries).toHaveLength(0);
   expect(await db.entries.count()).toBe(0);
 });
